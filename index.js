@@ -20,8 +20,13 @@ app.get('/', async (req, res) => {
         await page.goto(req.query.url);
         const image = await page.screenshot();
 
+        browser.close();
+
         return res.header("content-type", "image/jpeg").send(image);
     } catch(err) {
+        if (browser && browser.close) {
+            browser.close();
+        }
         return res.json({
             success: false,
             message: err.message
