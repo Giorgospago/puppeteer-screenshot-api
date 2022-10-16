@@ -63,8 +63,7 @@ app.get('/video', async (req, res) => {
         const viewport = {
             width: Number(req.query.width) || 1920,
             height: Number(req.query.height) || 1080,
-            deviceScaleFactor: Number(req.query.scale) || 1,
-            devicePixelRatio: Number(req.query.zoom) || 1
+            devicePixelRatio: Number(req.query.scale) || 1
         };
         await page.setViewport(viewport);
 
