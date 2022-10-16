@@ -1,3 +1,5 @@
 node_modules
 .idea
-
+public/videos/*
+public/images/*
+!.gitkeep

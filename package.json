@@ -1,16 +1,18 @@
 {
-  "name": "screenshot",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "dependencies": {
-    "express": "^4.18.1",
-    "puppeteer": "^14.2.1"
-  }
+    "name": "puppeteer-tools",
+    "version": "1.0.0",
+    "description": "",
+    "main": "index.js",
+    "scripts": {
+        "start": "node index.js"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "ISC",
+    "dependencies": {
+        "express": "^4.18.1",
+        "puppeteer": "^14.2.1",
+        "puppeteer-screen-recorder": "^2.1.2",
+        "uuid": "^9.0.0"
+    }
 }
