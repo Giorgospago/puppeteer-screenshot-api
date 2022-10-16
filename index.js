@@ -17,7 +17,7 @@ app.get('/', async (req, res) => {
             deviceScaleFactor: Number(req.query.scale) || 1
         });
 
-        await page.goto(req.query.url);
+        await page.goto(req.query.url, {"waitUntil" : "networkidle0"});
         const image = await page.screenshot();
 
         browser.close();
