@@ -27,4 +27,4 @@ RUN npm i --silent --only=production
 
 CMD [ "node", "index.js" ]
 
-EXPOSE 3000
+EXPOSE 3030
