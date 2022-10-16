@@ -4,7 +4,7 @@ const uuid = require('uuid');
 const express = require('express');
 const path = require("path");
 const app = express();
-const {rm, calculateRatio} = require("./lib/helpers");
+const {rm, calculateRatio, exec} = require("./lib/helpers");
 
 const BROWSER_LAUNCH = {
     headless: true,
@@ -17,7 +17,7 @@ const BROWSER_LAUNCH = {
     ]
 };
 
-app.listen(3000);
+app.listen(3030);
 app.use(express.static('public'));
 
 app.get('/', (req, res) => {
@@ -63,7 +63,8 @@ app.get('/video', async (req, res) => {
         const viewport = {
             width: Number(req.query.width) || 1920,
             height: Number(req.query.height) || 1080,
-            deviceScaleFactor: Number(req.query.scale) || 1
+            deviceScaleFactor: Number(req.query.scale) || 1,
+            devicePixelRatio: Number(req.query.zoom) || 1
         };
         await page.setViewport(viewport);
 
@@ -73,12 +74,12 @@ app.get('/video', async (req, res) => {
             fps: 25,
             ffmpeg_Path: '/usr/bin/ffmpeg',
             videoFrame: {
-                width: viewport.width * viewport.deviceScaleFactor,
-                height: viewport.height * viewport.deviceScaleFactor,
+                width: viewport.width * viewport.devicePixelRatio,
+                height: viewport.height * viewport.devicePixelRatio
             },
             videoCrf: 18,
             videoCodec: 'libx264',
-            videoPreset: 'fast',
+            videoPreset: 'ultrafast',
             videoBitrate: 1000,
             autopad: {
                 color: 'black' | '#35A5FF',
@@ -94,16 +95,16 @@ app.get('/video', async (req, res) => {
                 startTimer = setTimeout(() => {
                     resolve(true);
                 }, req.query.jsEventsStartTimeout || 10_000);
-                await page.exposeFunction('startVideoRecording', () => {
+                await page.exposeFunction('startVideoRecording', async () => {
                     clearTimeout(startTimer);
-                    recorder.start(path.join(__dirname, "public/videos", filename));
+                    await recorder.start(path.join(__dirname, "public/videos", filename));
                     stopTimer = setTimeout(() => {
                         resolve(true);
                     }, req.query.jsEventsStopTimeout || 100_000);
                 });
-                await page.exposeFunction('stopVideoRecording', () => {
+                await page.exposeFunction('stopVideoRecording', async () => {
                     clearTimeout(stopTimer);
-                    recorder.stop();
+                    await recorder.stop();
                     resolve(true);
                 });
                 await page.goto(req.query.url);
@@ -117,9 +118,16 @@ app.get('/video', async (req, res) => {
 
         await browser.close();
 
+        // Add audio
+        const input = path.join(__dirname, "public/videos", filename);
+        const audio = path.join(__dirname, "public/audios/colors.mp3");
+        const output = path.join(__dirname, "public/videos", "audio-" + filename);
+        await exec(`ffmpeg -i ${input} -i ${audio} -c:v copy -c:a aac -shortest ${output}`);
+
         return res.json({
             success: true,
-            url: req.protocol + '://' + req.get('host') + "/videos/" + filename
+            url: req.protocol + '://' + req.get('host') + "/videos/" + filename,
+            withAudio: req.protocol + '://' + req.get('host') + "/videos/audio-" + filename
         });
     } catch (err) {
         console.error("ERROR: ", err);
