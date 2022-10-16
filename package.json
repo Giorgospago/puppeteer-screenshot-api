@@ -4,7 +4,8 @@
     "description": "",
     "main": "index.js",
     "scripts": {
-        "start": "node index.js"
+        "start": "node index.js",
+        "clean": "rm -rf public/images/* && rm -rf public/videos/*"
     },
     "keywords": [],
     "author": "",

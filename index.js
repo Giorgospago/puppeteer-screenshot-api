@@ -67,8 +67,6 @@ app.get('/video', async (req, res) => {
         };
         await page.setViewport(viewport);
 
-        await page.goto(req.query.url, {waitUntil: "networkidle0"});
-
         const urlParts = new URL(req.query.url);
         const videoConfig = {
             followNewTab: true,
@@ -80,7 +78,7 @@ app.get('/video', async (req, res) => {
             },
             videoCrf: 18,
             videoCodec: 'libx264',
-            videoPreset: 'ultrafast',
+            videoPreset: 'fast',
             videoBitrate: 1000,
             autopad: {
                 color: 'black' | '#35A5FF',
@@ -89,11 +87,34 @@ app.get('/video', async (req, res) => {
         };
         const recorder = new PuppeteerScreenRecorder(page, videoConfig);
         const filename = `${urlParts.host}-${viewport.width}x${viewport.height}-scale.${viewport.deviceScaleFactor}-${uuid.v4()}.mp4`;
-        await recorder.start(path.join(__dirname, "public/videos", filename));
 
-        await page.waitForTimeout(3000);
+        if (req.query.jsEvents === "true") {
+            await new Promise(async (resolve, reject) => {
+                let startTimer, stopTimer;
+                startTimer = setTimeout(() => {
+                    resolve(true);
+                }, req.query.jsEventsStartTimeout || 10_000);
+                await page.exposeFunction('startVideoRecording', () => {
+                    clearTimeout(startTimer);
+                    recorder.start(path.join(__dirname, "public/videos", filename));
+                    stopTimer = setTimeout(() => {
+                        resolve(true);
+                    }, req.query.jsEventsStopTimeout || 100_000);
+                });
+                await page.exposeFunction('stopVideoRecording', () => {
+                    clearTimeout(stopTimer);
+                    recorder.stop();
+                    resolve(true);
+                });
+                await page.goto(req.query.url);
+            });
+        } else {
+            await page.goto(req.query.url, {waitUntil: "networkidle0"});
+            await recorder.start(path.join(__dirname, "public/videos", filename));
+            await page.waitForTimeout(req.query.duration || 3000);
+            await recorder.stop();
+        }
 
-        await recorder.stop();
         await browser.close();
 
         return res.json({
