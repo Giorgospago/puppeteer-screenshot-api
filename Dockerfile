@@ -22,6 +22,7 @@ WORKDIR /var/www
 COPY . .
 
 VOLUME /var/www/public
+VOLUME /var/www/chrome
 
 RUN npm i --silent --only=production
 

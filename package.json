@@ -1,13 +1,13 @@
 {
     "name": "puppeteer-tools",
-    "version": "1.0.2",
+    "version": "1.0.3",
     "description": "",
     "main": "index.js",
     "scripts": {
         "start": "node index.js",
         "clean": "rm -rf public/images/* && rm -rf public/videos/*",
-        "docker:build": "docker build -t giorgospago/puppeteer-tools:1.0.2 -t giorgospago/puppeteer-tools:latest --pull -f Dockerfile .",
-        "docker:push": "docker push giorgospago/puppeteer-tools:1.0.2 && docker push giorgospago/puppeteer-tools:latest",
+        "docker:build": "docker build -t giorgospago/puppeteer-tools:1.0.3 -t giorgospago/puppeteer-tools:latest --pull -f Dockerfile .",
+        "docker:push": "docker push giorgospago/puppeteer-tools:1.0.3 && docker push giorgospago/puppeteer-tools:latest",
         "all": "npm run clean && npm run docker:build && npm run docker:push"
     },
     "keywords": [],

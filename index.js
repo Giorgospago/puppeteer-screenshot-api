@@ -1,21 +1,10 @@
-const puppeteer = require('puppeteer');
 const {PuppeteerScreenRecorder} = require('puppeteer-screen-recorder');
 const uuid = require('uuid');
 const express = require('express');
 const path = require("path");
 const app = express();
-const {rm, calculateRatio, exec} = require("./lib/helpers");
-
-const BROWSER_LAUNCH = {
-    headless: true,
-    executablePath: '/usr/bin/google-chrome',
-    args: [
-        "--disable-gpu",
-        "--disable-dev-shm-usage",
-        "--disable-setuid-sandbox",
-        "--no-sandbox",
-    ]
-};
+const {rm, calculateRatio, exec, exists} = require("./lib/helpers");
+const {newPage, closePage} = require("./lib/browser");
 
 app.listen(3030);
 app.use(express.static('public'));
@@ -28,26 +17,20 @@ app.get('/', (req, res) => {
 });
 
 app.get('/image', async (req, res) => {
+    let page;
     try {
-        const browser = await puppeteer.launch(BROWSER_LAUNCH);
-        const page = await browser.newPage();
-
+        page = await newPage();
         await page.setViewport({
             width: Number(req.query.width) || 1920,
             height: Number(req.query.height) || 1080,
             deviceScaleFactor: Number(req.query.scale) || 1
         });
-
         await page.goto(req.query.url, {waitUntil: "networkidle0"});
-        const image = await page.screenshot();
-
-        await browser.close();
+        const image = await page.screenshot({type: "jpeg"});
+        await closePage(page);
         return res.header("content-type", "image/jpeg").send(image);
     } catch (err) {
-        console.error(err);
-        if (browser && browser.close) {
-            browser.close();
-        }
+        await closePage(page);
         return res.json({
             success: false,
             message: err.message
@@ -56,15 +39,14 @@ app.get('/image', async (req, res) => {
 });
 
 app.get('/video', async (req, res) => {
+    let page;
     try {
-        const browser = await puppeteer.launch(BROWSER_LAUNCH);
-        const page = await browser.newPage();
-
         const viewport = {
             width: Number(req.query.width) || 1920,
             height: Number(req.query.height) || 1080,
             devicePixelRatio: Number(req.query.scale) || 1
         };
+        page = await newPage();
         await page.setViewport(viewport);
 
         const urlParts = new URL(req.query.url);
@@ -115,24 +97,26 @@ app.get('/video', async (req, res) => {
             await recorder.stop();
         }
 
-        await browser.close();
+        await closePage(page);
+        const result = {
+            success: true,
+            url: req.protocol + '://' + req.get('host') + "/videos/" + filename
+        };
 
         // Add audio
-        const input = path.join(__dirname, "public/videos", filename);
-        const audio = path.join(__dirname, "public/audios/colors.mp3");
-        const output = path.join(__dirname, "public/videos", "audio-" + filename);
-        await exec(`ffmpeg -i ${input} -i ${audio} -c:v copy -c:a aac -shortest ${output}`);
-
-        return res.json({
-            success: true,
-            url: req.protocol + '://' + req.get('host') + "/videos/" + filename,
-            withAudio: req.protocol + '://' + req.get('host') + "/videos/audio-" + filename
-        });
-    } catch (err) {
-        console.error("ERROR: ", err);
-        if (browser && browser.close) {
-            browser.close();
+        if (req.query.audio) {
+            const input = path.join(__dirname, "public/videos", filename);
+            const audio = path.join(__dirname, "public/audios/", req.query.audio);
+            if (await exists(audio)) {
+                const output = path.join(__dirname, "public/videos", "audio-" + filename);
+                await exec(`ffmpeg -i ${input} -i ${audio} -c:v copy -c:a aac -shortest ${output}`);
+                result["withAudio"] = req.protocol + '://' + req.get('host') + "/videos/audio-" + filename
+            }
         }
+
+        return res.json(result);
+    } catch (err) {
+        await closePage(page);
         return res.json({
             success: false,
             message: err.message
