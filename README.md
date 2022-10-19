@@ -7,7 +7,7 @@ https://github.com/Giorgospago/puppeteer-screenshot-api
 ## Install
 Simple docker command
 ```sh
-docker
+docker run -p 3030:3030 giorgospago/puppeteer-tools
 ```
 
 With `docker-compose.yml` file
@@ -17,7 +17,6 @@ version: "3.7"
 
 services:
   puppeteer-tools:
-    hostname: 'puppeteer-tools'
     image: giorgospago/puppeteer-tools:latest
     ports:
       - 3030:3030
